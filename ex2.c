@@ -1,117 +1,103 @@
-#include <stdio.h>   // thư viện nhập xuất (printf)
-#include <stdlib.h>  // thư viện cấp phát động (malloc, free)
+#include <stdio.h>   // nhập xuất
+#include <stdlib.h>  // malloc, free
 
-/* Định nghĩa cấu trúc node */
-struct node {
-    int data;           // dữ liệu của node
-    struct node* next;  // con trỏ trỏ đến node tiếp theo
+/* Cấu trúc node cây */
+struct tnode {
+    int data;             // giá trị node
+    struct tnode* left;   // con trái
+    struct tnode* right;  // con phải
 };
 
-/* Hiển thị danh sách */
-void display(struct node* head) {
-    struct node* p = head;     // tạo con trỏ p để duyệt từ đầu
+/* Tạo node mới */
+struct tnode* talloc(int data) {
 
-    while (p != NULL) {        // lặp đến khi hết danh sách
-        printf("%d ", p->data); // in dữ liệu node hiện tại
-        p = p->next;            // chuyển sang node kế tiếp
-    }
+    struct tnode* p = (struct tnode*)malloc(sizeof(struct tnode)); // cấp phát
 
-    printf("\n"); // xuống dòng
+    p->data = data;   // gán dữ liệu
+    p->left = NULL;   // chưa có con trái
+    p->right = NULL;  // chưa có con phải
+
+    return p; // trả node
 }
 
-/* Thêm phần tử vào cuối */
-struct node* addback(struct node* head, int data) {
+/* Thêm node vào cây (BST) */
+struct tnode* addnode(struct tnode* root, int data) {
 
-    // cấp phát node mới
-    struct node* newnode = (struct node*)malloc(sizeof(struct node));
+    // nếu cây rỗng → tạo node mới
+    if (root == NULL)
+        return talloc(data);
 
-    newnode->data = data;  // gán dữ liệu
-    newnode->next = NULL;  // node cuối nên next = NULL
+    // nếu nhỏ hơn → sang trái
+    if (data < root->data)
+        root->left = addnode(root->left, data);
 
-    // nếu danh sách rỗng
-    if (head == NULL)
-        return newnode; // node mới chính là head
+    // nếu lớn hơn → sang phải
+    else
+        root->right = addnode(root->right, data);
 
-    struct node* p = head; // bắt đầu từ đầu
-
-    // tìm node cuối
-    while (p->next != NULL) {
-        p = p->next;
-    }
-
-    p->next = newnode; // nối node cuối với node mới
-
-    return head; // trả về head
+    return root; // trả lại root
 }
 
-/* Tìm phần tử */
-struct node* find(struct node* head, int data) {
-    struct node* p = head; // bắt đầu từ đầu
+/* Duyệt Preorder (Node - Left - Right) */
+void preorder(struct tnode* root) {
 
-    while (p != NULL) {    // duyệt toàn bộ danh sách
-        if (p->data == data) // nếu trùng giá trị
-            return p;        // trả về node tìm được
-
-        p = p->next; // sang node tiếp
+    if (root != NULL) {
+        printf("%d ", root->data); // xử lý node
+        preorder(root->left);      // duyệt trái
+        preorder(root->right);     // duyệt phải
     }
-
-    return NULL; // không tìm thấy
 }
 
-/* Xóa node */
-struct node* delnode(struct node* head, struct node* pelement) {
+/* Duyệt Inorder (Left - Node - Right) */
+void inorder(struct tnode* root) {
 
-    // kiểm tra rỗng hoặc phần tử không tồn tại
-    if (head == NULL || pelement == NULL)
-        return head;
-
-    // nếu xóa node đầu
-    if (head == pelement) {
-        struct node* temp = head; // lưu node đầu
-        head = head->next;        // dời head sang node tiếp
-        free(temp);               // giải phóng bộ nhớ
-        return head;
+    if (root != NULL) {
+        inorder(root->left);       // trái
+        printf("%d ", root->data); // node (kết quả tăng dần)
+        inorder(root->right);      // phải
     }
-
-    struct node* p = head;
-
-    // tìm node đứng trước node cần xóa
-    while (p->next != pelement) {
-        p = p->next;
-    }
-
-    // bỏ qua node cần xóa
-    p->next = pelement->next;
-
-    free(pelement); // giải phóng node
-
-    return head;
 }
 
-/* Hàm main để test */
+/* Xóa toàn bộ cây */
+int deltree(struct tnode* root) {
+
+    if (root == NULL)
+        return 0; // không có node
+
+    // xóa cây con trái
+    int left = deltree(root->left);
+
+    // xóa cây con phải
+    int right = deltree(root->right);
+
+    free(root); // xóa node hiện tại
+
+    return left + right + 1; // tổng số node đã xóa
+}
+
+/* Hàm main */
 int main() {
 
-    struct node* head = NULL; // danh sách ban đầu rỗng
+    struct tnode* root = NULL; // cây rỗng
 
-    // thêm phần tử
-    head = addback(head, 1);
-    head = addback(head, 2);
-    head = addback(head, 3);
+    int arr[] = {3,1,0,2,8,6,5,9}; // dữ liệu đề bài
+    int n = sizeof(arr)/sizeof(arr[0]); // số phần tử
 
-    printf("Danh sach: ");
-    display(head);
+    // thêm từng phần tử vào cây
+    for (int i = 0; i < n; i++) {
+        root = addnode(root, arr[i]);
+    }
 
-    // tìm phần tử có giá trị 2
-    struct node* p = find(head, 2);
+    printf("Preorder: ");
+    preorder(root);
 
-    if (p != NULL)
-        printf("Tim thay: %d\n", p->data);
+    printf("\nInorder: ");
+    inorder(root);
 
-    // xóa node vừa tìm
-    head = delnode(head, p);
+    // xóa cây
+    int count = deltree(root);
 
-    printf("Sau khi xoa: ");
-    display(head);
+    printf("\nDa xoa %d node\n", count);
 
-    return 0; // kết thúc chương trình
+    return 0;
 }
